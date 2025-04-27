@@ -1,111 +1,93 @@
-import React, {useState, useCallback} from 'react'
-import Cookies from 'js-cookie'
+import {Component} from 'react'
 import {Link, withRouter} from 'react-router-dom'
-import {
-  FiAlignJustify,
-  FiX,
-  FiHome,
-  FiBarChart2,
-  FiLogOut,
-} from 'react-icons/fi'
+import Cookies from 'js-cookie'
+import {FiMenu} from 'react-icons/fi'
+import {MdClose} from 'react-icons/md'
+
+import MoodTrackerContext from '../../context/MoodTrackerContext'
+
 import './index.css'
 
-const Header = props => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+class Header extends Component {
+  state = {isMenu: false}
 
-  // Memoize toggle function to prevent unnecessary re-renders
-  const toggleMenu = useCallback(() => {
-    setIsMenuOpen(prev => !prev)
-  }, [])
+  onMenuClick = () => {
+    this.setState(prev => ({isMenu: !prev.isMenu}))
+  }
 
-  /** Handle logout and redirect to login page */
-  const handleLogout = () => {
-    const {history} = props
+  onLogout = () => {
+    const {history} = this.props
     Cookies.remove('jwt_token')
     history.replace('/login')
   }
 
-  /** Navigation links (reused for both desktop & mobile) */
-  const NavLinks = ({onClick}) => (
-    <ul>
-      <li>
-        <Link to="/" onClick={onClick} aria-label="Home">
-          <FiHome className="icon" /> Home
-        </Link>
-      </li>
-      <li>
-        <Link to="/report" onClick={onClick} aria-label="Report">
-          <FiBarChart2 className="icon" /> Report
-        </Link>
-      </li>
-      <li>
-        <button
-          onClick={() => {
-            handleLogout()
-            onClick?.()
-          }}
-          className="logout-btn"
-          aria-label="Logout"
-        >
-          <FiLogOut className="icon" /> Logout
-        </button>
-      </li>
-    </ul>
-  )
+  render() {
+    const {isMenu} = this.state
+    const newClassName = isMenu ? 'navbar-menu' : 'nav-content-lg'
+    const newDataTestid = isMenu ? 'navbarMenu' : 'navContentLg'
+    return (
+      <MoodTrackerContext.Consumer>
+        {value => {
+          const {onHomeClick, onReportClick} = value
 
-  return (
-    <header className="header" role="banner">
-      {/* Logo */}
-      <Link to="/" className="logo-link" aria-label="Home">
-        <div className="logo_section">
-          <h1 className="logoText">
-            Daily <span>Mode Tracker</span>
-          </h1>
-        </div>
-      </Link>
-
-      {/* Desktop Navigation */}
-      <nav className="desktop-nav" aria-label="Main navigation">
-        <NavLinks />
-      </nav>
-
-      {/* Mobile Hamburger Button */}
-      <button
-        className="hamburger"
-        onClick={toggleMenu}
-        aria-label="Toggle Menu"
-        aria-expanded={isMenuOpen}
-      >
-        <FiAlignJustify />
-      </button>
-
-      {/* Overlay (click to close menu) */}
-      {isMenuOpen && (
-        <div
-          className="overlay"
-          onClick={toggleMenu}
-          role="button"
-          aria-label="Close Menu"
-          tabIndex={0}
-        />
-      )}
-
-      {/* Mobile Navigation Drawer */}
-      <nav
-        className={`mobile-nav ${isMenuOpen ? 'active' : ''}`}
-        aria-label="Mobile navigation"
-      >
-        <button
-          className="close-btn"
-          onClick={toggleMenu}
-          aria-label="Close Menu"
-        >
-          <FiX />
-        </button>
-        <NavLinks onClick={toggleMenu} />
-      </nav>
-    </header>
-  )
+          return (
+            <>
+              <nav data-testid="navbar" className="navbar">
+                <h1 data-testid="navHeading" className="nav-heading">
+                  Daily Mood Tracker
+                </h1>
+                <div data-testid="navContentSm" className="nav-content-sm">
+                  <button
+                    className="menu-button"
+                    type="button"
+                    onClick={this.onMenuClick}
+                    data-testid="menuButton"
+                  >
+                    {isMenu ? (
+                      <MdClose className="icon" />
+                    ) : (
+                      <FiMenu className="icon" />
+                    )}
+                  </button>
+                </div>
+                <div data-testid={newDataTestid} className={newClassName}>
+                  <ul
+                    data-testid="navbarMenuContent"
+                    className="navbar-menu-content"
+                  >
+                    <Link onClick={onHomeClick} className="link" to="/">
+                      <li data-testid="navLi" className="nav-li">
+                        Home
+                      </li>
+                    </Link>
+                    <Link
+                      onClick={onReportClick}
+                      className="link"
+                      to="/reports"
+                    >
+                      <li data-testid="navLi2" className="nav-li">
+                        Reports
+                      </li>
+                    </Link>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={this.onLogout}
+                        className="logout-button"
+                        data-testid="logoutButton"
+                      >
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </nav>
+            </>
+          )
+        }}
+      </MoodTrackerContext.Consumer>
+    )
+  }
 }
 
 export default withRouter(Header)

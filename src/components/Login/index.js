@@ -1,91 +1,162 @@
-import React, {useState} from 'react'
-import {Redirect, useHistory} from 'react-router-dom'
+import {Component} from 'react'
 import Cookies from 'js-cookie'
+import {Redirect} from 'react-router-dom'
+
 import './index.css'
 
-const Login = () => {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
-  const history = useHistory()
+class Login extends Component {
+  state = {
+    username: '',
+    password: '',
+    passwordType: 'password',
+    errorMsg: '',
+    isError: false,
+  }
 
-  const handleLogin = async e => {
-    e.preventDefault()
-    const userDetails = {username, password}
+  onSubmitSuccess = jwtToken => {
+    const {history} = this.props
+    Cookies.set('jwt_token', jwtToken, {expires: 30})
+    history.replace('/')
+  }
+
+  onSubmitFailure = errorMsg => {
+    this.setState({
+      errorMsg,
+      isError: true,
+    })
+  }
+
+  onSubmitForm = async event => {
+    event.preventDefault()
+    const {username, password} = this.state
+    const userDetails = {
+      username,
+      password,
+    }
     const url = 'https://apis.ccbp.in/login'
     const options = {
       method: 'POST',
       body: JSON.stringify(userDetails),
     }
-
-    try {
-      const response = await fetch(url, options)
-      const data = await response.json()
-      if (response.ok) {
-        Cookies.set('jwt_token', data.jwt_token, {expires: 30})
-        history.replace('/')
-      } else {
-        setError(data.error_msg)
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
+    const response = await fetch(url, options)
+    const data = await response.json()
+    console.log(data)
+    if (response.ok) {
+      this.onSubmitSuccess(data.jwt_token)
+    } else {
+      this.onSubmitFailure(data.error_msg)
     }
   }
 
-  if (Cookies.get('jwt_token')) {
-    return <Redirect to="/" />
+  onUsernameChange = event => {
+    this.setState({
+      username: event.target.value,
+    })
   }
 
-  return (
-    <div className="login-container">
-      <form onSubmit={handleLogin} className="form_container">
-        <h1 className="head">Daily Mood Tracker</h1>
-        <div className="input_container">
-          <label>USERNAME</label>
-          <br />
-          <input
-            placeholder="Enter Name"
-            type="text"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            data-testid="usernameInput"
-          />
+  onPasswordChange = event => {
+    this.setState({
+      password: event.target.value,
+    })
+  }
+
+  onClickCheckbox = event => {
+    if (event.target.checked) {
+      this.setState({
+        passwordType: 'text',
+      })
+    } else {
+      this.setState({
+        passwordType: 'password',
+      })
+    }
+  }
+
+  render() {
+    const {username, password, passwordType, errorMsg, isError} = this.state
+    const jwtToken = Cookies.get('jwt_token')
+    if (jwtToken !== undefined) {
+      return <Redirect to="/" />
+    }
+    return (
+      <div data-testid="bgLoginContainer" className="bg-login-container">
+        <div data-testid="loginContainer" className="login-container">
+          <h1 data-testid="loginHeading" className="login-heading">
+            Daily Mood Tracker
+          </h1>
+          <form
+            data-testid="form"
+            className="form"
+            onSubmit={this.onSubmitForm}
+          >
+            <div data-testid="inputContainer1" className="input-container">
+              <label
+                data-testid="label1"
+                className="label"
+                htmlFor="username-input"
+              >
+                USERNAME
+              </label>
+              <input
+                data-testid="input1"
+                className="input"
+                value={username}
+                id="username-input"
+                onChange={this.onUsernameChange}
+                type="text"
+              />
+            </div>
+            <div data-testid="inputContainer2" className="input-container">
+              <label
+                data-testid="label2"
+                className="label"
+                htmlFor="password-input"
+              >
+                PASSWORD
+              </label>
+              <input
+                data-testid="input2"
+                className="input"
+                value={password}
+                id="password-input"
+                onChange={this.onPasswordChange}
+                type={`${passwordType}`}
+              />
+            </div>
+            <div data-testid="checkboxContainer" className="checkbox-container">
+              <input
+                data-testid="checkboxInputs"
+                className="checkbox-inputs"
+                id="checkbox-input"
+                onChange={this.onClickCheckbox}
+                type="checkbox"
+              />
+              <label
+                data-testid="checkboxLabel"
+                className="checkbox-label"
+                htmlFor="checkbox-input"
+              >
+                Show Password
+              </label>
+            </div>
+            <button
+              data-testid="loginButton"
+              type="submit"
+              className="login-button"
+            >
+              Login
+            </button>
+            {isError ? (
+              <p
+                data-testid="errorMsg"
+                className="error-msg"
+              >{`${errorMsg}`}</p>
+            ) : null}
+          </form>
         </div>
-        <div className="input_container">
-          <label>PASSWORD</label>
-          <br />
-          <input
-            placeholder="Enter Password"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            data-testid="passwordInput"
-          />
-        </div>
-        <div className="checkbox_container">
-          <label>
-            <input
-              type="checkbox"
-              checked={showPassword}
-              onChange={() => setShowPassword(!showPassword)}
-              data-testid="showPassword"
-              className="check_box"
-            />
-            Show Password
-          </label>
-        </div>
-        <button type="submit" data-testid="loginButton" className="login_btn">
-          Login
-        </button>
-        {error && (
-          <p className="error" data-testid="errorMessage" className="error_msg">
-            {error}
-          </p>
-        )}
-      </form>
-    </div>
-  )
+      </div>
+    )
+  }
 }
 
 export default Login
